@@ -1,14 +1,8 @@
 <?php
 
-$api_name = "training-beer";
+$api_name = "test";
 $version = "1.0";
 
-$url = "http://127.0.0.1/server-training-beer/";
+$url = "http://127.0.0.1/test/";
 
 $production = false;
-
-$DB_NAME = "training-beer";
-$DB_HOST = "localhost";
-$DB_USER = "root";
-$DB_PASSWORD = "";
-
