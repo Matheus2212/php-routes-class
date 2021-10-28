@@ -1,8 +1,7 @@
 <?php
 
-$api_name = "test";
-$version = "1.0";
+$APIversion = array('name' => 'test', 'version' => '1.0');
 
-$url = "http://127.0.0.1/test/";
+$url = "http://127.0.0.1/testes/php-api-class/api";
 
 $production = false;
