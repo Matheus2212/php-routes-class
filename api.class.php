@@ -61,7 +61,7 @@ class API
 
         public function version()
         {
-                $this->join(array('name' => $this->name, 'version' => $this->version));
+                $this->join(array('name' => $this->name, 'version' => $this->version, 'baseURL' => $this->url));
                 return array('name' => $this->name, 'version' => $this->version);
         }
 
@@ -128,7 +128,7 @@ class API
                                                 $totalParams = $reflection->getNumberOfParameters();
                                                 if ($totalParams > 1) {
                                                         if (empty($class->requestBody)) {
-                                                                $class->join(array("error" => "002", "message" => "No request was sent"));
+                                                                $class->join(array("error" => "002", "message" => "No request was sent", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                                                         } else {
                                                                 $allRoutes[$operation]["callback"]($class, $class->requestBody, true);
                                                         }
@@ -136,11 +136,11 @@ class API
                                                         $allRoutes[$operation]["callback"]($class);
                                                 }
                                         } else {
-                                                $class->join(array("error" => "001", "message" => "This route doesn't exists"));
+                                                $class->join(array("error" => "001", "message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                                         }
                                 }
                         } else {
-                                $class->join(array("error" => "001", "message" => "This route doesn't exists"));
+                                $class->join(array("error" => "001", "message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                         }
                 };
                 $recursiveRoute($recursiveRoute, $this, $this->routes, $this->URLclass->getParts(), 0);
