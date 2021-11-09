@@ -8,19 +8,24 @@
  * 2021-06-20 -> removed all own methods and made the API class work together with the Friendly URL class
  * 2021-06-22 -> Fully integrated API class with Friendly URL class (now its a dependency)
  * 2021-10-28 -> Updated Class. It now can be used on production
+ * 2021-11-09 -> Added $middleware and $requestHeaders as variable
  *  */
 
 class API
 {
         private $name = "DEFAULT";
 
+        private $middleware = array();
+
         private $version = 0;
 
         private $url = null;
 
+        private $requestHeaders = null;
+
         private $requestBody = null;
 
-        private $URLclass = null;
+        public $URLclass = null;
 
         private $routes = array();
 
@@ -39,10 +44,11 @@ class API
                         $this->requestBody = array();
                 }
                 if ($url && is_object($url)) {
+                        $urlNow = $url->now();
+                        $this->requestHeaders = getallheaders();
                         $this->name = $info['name'];
                         $this->version = $info['version'];
                         $this->url = $url->getURL() . "v" . $this->version . "/";
-                        $urlNow = $url->now();
                         if (substr($urlNow, -1) !== "/") {
                                 $urlNow = $urlNow . "/";
                         }
@@ -106,6 +112,46 @@ class API
                 $recursiveRoute($recursiveRoute, "", $this->routes, $parts, $callback);
         }
 
+        public function middleware($callback, $routesArray)
+        {
+                if (is_array($routesArray)) {
+                        foreach ($routesArray as $route) {
+                                $parts = explode("/", $route);
+                                $parts = array_filter($parts, function ($item) {
+                                        if (trim($item) === "") {
+                                                return false;
+                                        } else {
+                                                return true;
+                                        }
+                                });
+                                $parts = array_values($parts);
+                                foreach ($parts as $key => $value) {
+                                        $parts[$key] = "/" . $parts[$key];
+                                }
+                                $recursiveRoute = function ($recursiveRoute, $previous = "", &$arrayParent, $arrayTarget, $callback) {
+                                        $previous = ($previous == "" ? (isset($arrayTarget[0]) ? $arrayTarget[0] : "") : $previous);
+                                        $position = (isset($arrayTarget[0]) ? $arrayTarget[0] : "");
+                                        if (!array_key_exists($position, $arrayParent)) {
+                                                $arrayParent[$position] = array();
+                                        }
+                                        unset($arrayTarget[0]);
+                                        if (empty($arrayTarget)) {
+                                                $arrayParent[$position]['middleware'] = $callback;
+                                        } else {
+                                                $recursiveRoute($recursiveRoute, $position, $arrayParent[$position], array_values($arrayTarget), $callback);
+                                        }
+                                };
+                                $recursiveRoute($recursiveRoute, "", $this->routes, $parts, $callback);
+                        }
+                } else {
+                        if (is_string($routesArray)) {
+                                if ($routesArray == "*") {
+                                        $this->middleware[] = $callback;
+                                }
+                        }
+                }
+        }
+
         public function route()
         {
                 $recursiveRoute = function ($recursiveRoute, &$class, &$allRoutes, $currentRoute, $counter) {
@@ -123,6 +169,11 @@ class API
                                 if (!empty($currentRoute)) {
                                         $recursiveRoute($recursiveRoute, $class, $allRoutes[$operation], array_values($currentRoute), ++$counter);
                                 } else {
+                                        if (isset($allRoutes[$operation]["middleware"])) {
+                                                if (!$allRoutes[$operation]["middleware"]($this, $this->requestHeaders, $this->requestBody)) {
+                                                        return false;
+                                                }
+                                        }
                                         if (isset($allRoutes[$operation]["callback"])) {
                                                 $reflection = new ReflectionFunction($allRoutes[$operation]["callback"]);
                                                 $totalParams = $reflection->getNumberOfParameters();
@@ -130,7 +181,7 @@ class API
                                                         if (empty($class->requestBody)) {
                                                                 $class->join(array("error" => "002", "message" => "No request was sent", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                                                         } else {
-                                                                $allRoutes[$operation]["callback"]($class, $class->requestBody, true);
+                                                                $allRoutes[$operation]["callback"]($class, $class->requestBody, $class->requestHeaders);
                                                         }
                                                 } else {
                                                         $allRoutes[$operation]["callback"]($class);
@@ -143,6 +194,13 @@ class API
                                 $class->join(array("error" => "001", "message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                         }
                 };
+                if (!empty($this->middleware)) {
+                        foreach ($this->middleware as $callback) {
+                                if (!$callback($this, $this->requestHeaders)) {
+                                        return false;
+                                }
+                        }
+                }
                 $recursiveRoute($recursiveRoute, $this, $this->routes, $this->URLclass->getParts(), 0);
         }
 
