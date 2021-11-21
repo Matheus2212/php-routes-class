@@ -9,7 +9,6 @@
  * 2021-06-22 -> Fully integrated API class with Friendly URL class (now its a dependency)
  * 2021-10-28 -> Updated Class. It now can be used on production
  * 2021-11-09 -> Added $middleware and $requestHeaders as variable
- * 2021-11-16 -> Fixed middleware call when route is children of another route
  *  */
 
 class API
@@ -48,8 +47,12 @@ class API
                         $urlNow = $url->now();
                         $this->requestHeaders = getallheaders();
                         $this->name = $info['name'];
-                        $this->version = $info['version'];
-                        $this->url = $url->getURL() . "v" . $this->version . "/";
+                        if (isset($info['version'])) {
+                                $this->version = $info['version'];
+                                $this->url = $url->getURL() . "v" . $this->version . "/";
+                        } else {
+                                $this->url = $url->getURL();
+                        }
                         if (substr($urlNow, -1) !== "/") {
                                 $urlNow = $urlNow . "/";
                         }
@@ -167,11 +170,6 @@ class API
                                 }
                         }
                         if (isset($allRoutes[$operation])) {
-                                if (isset($allRoutes[$operation]['middleware'])) {
-                                        if (!$allRoutes[$operation]["middleware"]($this, $this->requestHeaders, $this->requestBody)) {
-                                                return false;
-                                        }
-                                }
                                 if (!empty($currentRoute)) {
                                         $recursiveRoute($recursiveRoute, $class, $allRoutes[$operation], array_values($currentRoute), ++$counter);
                                 } else {
@@ -202,7 +200,7 @@ class API
                 };
                 if (!empty($this->middleware)) {
                         foreach ($this->middleware as $callback) {
-                                if (!$callback($this, $this->requestHeaders, $this->requestBody)) {
+                                if (!$callback($this, $this->requestHeaders)) {
                                         return false;
                                 }
                         }
@@ -220,6 +218,7 @@ class API
                                 return utf8_encode($data);
                         }
                 }
+
                 return json_encode(recursive_json($this->data));
         }
 
