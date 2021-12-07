@@ -1,6 +1,6 @@
-# php API class
+# php Routes class
 
-A RESTfull PHP API class.
+A RESTfull PHP Routes class.
 
 It uses the express (node.js) route concepts, in a very simple way.
 
