@@ -9,6 +9,7 @@
  * 2021-06-22 -> Fully integrated API class with Friendly URL class (now its a dependency)
  * 2021-10-28 -> Updated Class. It now can be used on production
  * 2021-11-09 -> Added $middleware and $requestHeaders as variable
+ * 2022-03-25 -> Refactored construct method to consider $get definition in the URL class
  *  */
 
 class API
