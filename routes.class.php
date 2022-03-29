@@ -9,29 +9,39 @@
  * 2021-06-22 -> Fully integrated API class with Friendly URL class (now its a dependency)
  * 2021-10-28 -> Updated Class. It now can be used on production
  * 2021-11-09 -> Added $middleware and $requestHeaders as variable
- * 2022-03-25 -> Refactored construct method to consider $get definition in the URL class
+ * 2022-03-29 -> refactor: Improved route method, to call if from another route. Added some documentation on the class file.
  *  */
 
-class API
+class ROUTE
 {
+        // Application name
         private $name = "DEFAULT";
 
+        // Middlewares array of callbacks
         private $middleware = array();
 
+        // Application version
         private $version = 0;
 
+        // Application URL
         private $url = null;
 
+        // Headers array
         private $requestHeaders = null;
 
+        // Body array
         private $requestBody = null;
 
+        // URL Class instance (this class could extends the friendly URLs one, but let's keep it somehow independant)
         public $URLclass = null;
 
+        // All routes array
         private $routes = array();
 
+        // Data array, from the route callback
         private $data = array();
 
+        // Constructor method. Will define almost everything the API needs to be ready to work.
         public function __construct($url, $info)
         {
                 header("Access-Control-Allow-Origin: *");
@@ -57,7 +67,7 @@ class API
                         if (substr($urlNow, -1) !== "/") {
                                 $urlNow = $urlNow . "/";
                         }
-                        $url->__construct($this->url);
+                        $url->__construct($this->url, $url->__get("get"));
                         $now = str_replace(preg_replace("/http(s)?\:\/\//", "", $url->getURL()), "", preg_replace("/http(s)?\:\/\//", "", $urlNow));
                         $this->parts = explode("/", $now);
                         $this->URLclass = $url;
@@ -65,17 +75,28 @@ class API
                 }
         }
 
+        /**
+         * @param $key = Property
+         * @param $value = Property value
+         */
         public function __set($key, $value)
         {
                 $this->$key = $value;
         }
 
+        /**
+         * @return array Returns the Application version
+         */
         public function version()
         {
                 $this->join(array('name' => $this->name, 'version' => $this->version, 'baseURL' => $this->url));
                 return array('name' => $this->name, 'version' => $this->version);
         }
 
+        /**
+         * @param array $array Data to be joined on response
+         * @param bool $status Define if the response will have a true or false output status
+         */
         public function join($array, $status = true)
         {
                 $this->data = array_merge($this->data, $array);
@@ -87,6 +108,10 @@ class API
                 return $this;
         }
 
+        /**
+         * @param string $route Defines the route
+         * @param function $callback Defines the callback for that route
+         */
         public function define($route, $callback)
         {
                 $parts = explode("/", $route);
@@ -117,6 +142,10 @@ class API
                 $recursiveRoute($recursiveRoute, "", $this->routes, $parts, $callback);
         }
 
+        /**
+         * @param function $callback Defines the callback BEFORE the ROUTE
+         * @param array $routesArray Defines WHICH ROUTES the callback will be applied.
+         */
         public function middleware($callback, $routesArray)
         {
                 if (is_array($routesArray)) {
@@ -157,9 +186,14 @@ class API
                 }
         }
 
-        public function route()
+        /**
+         * @param string $route Is the route you want to call or it gets automatically
+         * @param array $requestBody Is the data you want to send to the route
+         * @param array $requestHeaders is the data you want to send to the route
+         */
+        public function route($route = false, $requestBody = false, $requestHeaders = false)
         {
-                $recursiveRoute = function ($recursiveRoute, &$class, &$allRoutes, $currentRoute, $counter) {
+                $recursiveRoute = function ($recursiveRoute, &$class, &$allRoutes, $currentRoute, $counter, $requestBody = false, $requestHeaders = false) {
                         $operation = isset($currentRoute[0]) ? $currentRoute[0] : "";
                         unset($currentRoute[0]);
                         if (!isset($allRoutes[$operation])) {
@@ -171,11 +205,16 @@ class API
                                 }
                         }
                         if (isset($allRoutes[$operation])) {
+                                if (isset($allRoutes[$operation]["middleware"])) {
+                                        if (!$allRoutes[$operation]["middleware"]($this, ($requestHeaders ? array_merge($this->requestHeaders, $requestHeaders) : $this->requestHeaders), ($requestBody ? array_merge($this->requestBody, $requestBody) : $this->requestBody))) {
+                                                return false;
+                                        }
+                                }
                                 if (!empty($currentRoute)) {
-                                        $recursiveRoute($recursiveRoute, $class, $allRoutes[$operation], array_values($currentRoute), ++$counter);
+                                        $recursiveRoute($recursiveRoute, $class, $allRoutes[$operation], array_values($currentRoute), ++$counter, $requestBody, $requestHeaders);
                                 } else {
                                         if (isset($allRoutes[$operation]["middleware"])) {
-                                                if (!$allRoutes[$operation]["middleware"]($this, $this->requestHeaders, $this->requestBody)) {
+                                                if (!$allRoutes[$operation]["middleware"]($this, ($requestHeaders ? array_merge($this->requestHeaders, $requestHeaders) : $this->requestHeaders), ($requestBody ? array_merge($this->requestBody, $requestBody) : $this->requestBody))) {
                                                         return false;
                                                 }
                                         }
@@ -183,20 +222,20 @@ class API
                                                 $reflection = new ReflectionFunction($allRoutes[$operation]["callback"]);
                                                 $totalParams = $reflection->getNumberOfParameters();
                                                 if ($totalParams > 1) {
-                                                        if (empty($class->requestBody)) {
-                                                                $class->join(array("error" => "002", "message" => "No request was sent", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                                        if (empty($class->requestBody) && !$requestBody) {
+                                                                $class->join(array("message" => "No request was sent", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                                                         } else {
-                                                                $allRoutes[$operation]["callback"]($class, $class->requestBody, $class->requestHeaders);
+                                                                $allRoutes[$operation]["callback"]($class, ($requestBody ? array_merge($class->requestBody, $requestBody) : $class->requestBody), ($requestHeaders ? array_merge($class->requestHeaders, $requestHeaders) : $class->requestHeaders));
                                                         }
                                                 } else {
                                                         $allRoutes[$operation]["callback"]($class);
                                                 }
                                         } else {
-                                                $class->join(array("error" => "001", "message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                                         }
                                 }
                         } else {
-                                $class->join(array("error" => "001", "message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
                         }
                 };
                 if (!empty($this->middleware)) {
@@ -206,9 +245,19 @@ class API
                                 }
                         }
                 }
-                $recursiveRoute($recursiveRoute, $this, $this->routes, $this->URLclass->getParts(), 0);
+                if ($route) {
+                        $parts = array_map(function ($part) {
+                                return ($part !== "" ? "/" . $part : false);
+                        }, explode("/", $route));
+                        unset($parts[0]);
+                        $parts = array_values($parts);
+                }
+                $recursiveRoute($recursiveRoute, $this, $this->routes, (isset($parts) ? $parts : $this->URLclass->getParts()), 0, $requestBody, $requestHeaders);
         }
 
+        /**
+         * @return string Return a JSON array with all data on the Route
+         */
         private function APIReturn()
         {
                 function recursive_json($data)
@@ -223,6 +272,10 @@ class API
                 return json_encode(recursive_json($this->data));
         }
 
+        /**
+         * @param bool $echo Will define it the class itself will echo the output
+         * @return string will output all data managed in the request
+         */
         public function response($echo = false)
         {
                 $data = $this->APIReturn();
