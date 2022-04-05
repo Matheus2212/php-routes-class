@@ -10,6 +10,7 @@
  * 2021-10-28 -> Updated Class. It now can be used on production
  * 2021-11-09 -> Added $middleware and $requestHeaders as variable
  * 2022-03-29 -> refactor: Improved route method, to call if from another route. Added some documentation on the class file.
+ * 2022-04-04 -> refactor: Improved middleware method, to get data while on the route function, sending the class as reference and parameter
  *  */
 
 class ROUTE
@@ -82,6 +83,15 @@ class ROUTE
         public function __set($key, $value)
         {
                 $this->$key = $value;
+        }
+
+        /**
+         * @return $array returns data inside $data array
+         * 
+         */
+        public function getData()
+        {
+                return $this->data;
         }
 
         /**
@@ -206,7 +216,7 @@ class ROUTE
                         }
                         if (isset($allRoutes[$operation])) {
                                 if (isset($allRoutes[$operation]["middleware"])) {
-                                        if (!$allRoutes[$operation]["middleware"]($this, ($requestHeaders ? array_merge($this->requestHeaders, $requestHeaders) : $this->requestHeaders), ($requestBody ? array_merge($this->requestBody, $requestBody) : $this->requestBody))) {
+                                        if (!$allRoutes[$operation]["middleware"]($class, ($requestHeaders ? array_merge($class->requestHeaders, $requestHeaders) : $class->requestHeaders), ($requestBody ? array_merge($class->requestBody, $requestBody) : $class->requestBody))) {
                                                 return false;
                                         }
                                 }
@@ -214,7 +224,7 @@ class ROUTE
                                         $recursiveRoute($recursiveRoute, $class, $allRoutes[$operation], array_values($currentRoute), ++$counter, $requestBody, $requestHeaders);
                                 } else {
                                         if (isset($allRoutes[$operation]["middleware"])) {
-                                                if (!$allRoutes[$operation]["middleware"]($this, ($requestHeaders ? array_merge($this->requestHeaders, $requestHeaders) : $this->requestHeaders), ($requestBody ? array_merge($this->requestBody, $requestBody) : $this->requestBody))) {
+                                                if (!$allRoutes[$operation]["middleware"]($class, ($requestHeaders ? array_merge($class->requestHeaders, $requestHeaders) : $class->requestHeaders), ($requestBody ? array_merge($class->requestBody, $requestBody) : $class->requestBody))) {
                                                         return false;
                                                 }
                                         }
@@ -223,7 +233,7 @@ class ROUTE
                                                 $totalParams = $reflection->getNumberOfParameters();
                                                 if ($totalParams > 1) {
                                                         if (empty($class->requestBody) && !$requestBody) {
-                                                                $class->join(array("message" => "No request was sent", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                                                $class->join(array("message" => "No request was sent", 'baseURL' => $class->url, 'route' => $class->URLclass->now()));
                                                         } else {
                                                                 $allRoutes[$operation]["callback"]($class, ($requestBody ? array_merge($class->requestBody, $requestBody) : $class->requestBody), ($requestHeaders ? array_merge($class->requestHeaders, $requestHeaders) : $class->requestHeaders));
                                                         }
@@ -231,11 +241,11 @@ class ROUTE
                                                         $allRoutes[$operation]["callback"]($class);
                                                 }
                                         } else {
-                                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $class->url, 'route' => $class->URLclass->now()));
                                         }
                                 }
                         } else {
-                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $this->url, 'route' => $this->URLclass->now()));
+                                $class->join(array("message" => "This route doesn't exists", 'baseURL' => $class->url, 'route' => $class->URLclass->now()));
                         }
                 };
                 if (!empty($this->middleware)) {
