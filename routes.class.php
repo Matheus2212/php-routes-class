@@ -95,11 +95,20 @@ class ROUTE
         }
 
         /**
+         * @return $array returns data inside $data array
+         * 
+         */
+        public function getBaseURL()
+        {
+                return $this->url;
+        }
+
+        /**
          * @return array Returns the Application version
          */
         public function version()
         {
-                $this->join(array('name' => $this->name, 'version' => $this->version, 'baseURL' => $this->url));
+                $this->join(array('name' => $this->name, 'version' => $this->version, 'baseURL' => $this->getBaseURL()));
                 return array('name' => $this->name, 'version' => $this->version);
         }
 
@@ -110,9 +119,9 @@ class ROUTE
         public function join($array, $status = true)
         {
                 $this->data = array_merge($this->data, $array);
-                $this->data = array_merge($this->data, array("status" => $status));
+                $this->data = array_merge($this->data, array("status" => ($status ? "true" : "false")));
                 if (isset($this->data['error'])) {
-                        $this->data['status'] = false;
+                        $this->data['status'] = "false";
                 }
                 $this->data["time"] = time();
                 return $this;
