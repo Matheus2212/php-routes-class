@@ -11,6 +11,7 @@
  * 2021-11-09 -> Added $middleware and $requestHeaders as variable
  * 2022-03-29 -> refactor: Improved route method, to call if from another route. Added some documentation on the class file.
  * 2022-04-04 -> refactor: Improved middleware method, to get data while on the route function, sending the class as reference and parameter
+ * 2022-09-25 -> refactor: Renamed class to use with PHPUnit
  *  */
 
 class ROUTE

@@ -2,8 +2,8 @@
 
 require "./config.php";
 //require "../php-database-class/db.class.php";
-require "../php-friendly-urls-class/url.class.php";
-require "./api.class.php";
+require "../php-friendly-urls-class/url.class.php"; // you can find this class in other repository
+require "./RoutesClass.php";
 
 $url = new URL($url);
 

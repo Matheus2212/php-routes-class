@@ -1,10 +1,10 @@
 # php Routes class
 
-A RESTfull PHP Routes class.
+A REST PHP Routes class.
 
 It uses the express (node.js) route concepts, in a very simple way.
 
-This class needs the Friendly URL class as dependency and .htaccess file.
+This class needs the [Friendly URL](https://github.com/Matheus2212/php-friendly-urls-class) class as dependency and .htaccess file.
 
 ---
 
