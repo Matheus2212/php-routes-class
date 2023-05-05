@@ -7,7 +7,7 @@ require "./RoutesClass.php";
 
 $url = new URL($url);
 
-$api = new API($url, $APIversion);
+$api = new ROUTE($url, $APIversion);
 
 
 

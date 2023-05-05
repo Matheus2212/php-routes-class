@@ -71,9 +71,9 @@ class ROUTE
                         }
                         $url->__construct($this->url, $url->__get("get"));
                         $now = str_replace(preg_replace("/http(s)?\:\/\//", "", $url->getURL()), "", preg_replace("/http(s)?\:\/\//", "", $urlNow));
-                        $this->parts = explode("/", $now);
+                        $parts = explode("/", $now);
                         $this->URLclass = $url;
-                        $this->URLclass->partes = $this->parts;
+                        $this->URLclass->partes = $parts;
                 }
         }
 
