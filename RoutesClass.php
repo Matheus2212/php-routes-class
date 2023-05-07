@@ -60,11 +60,10 @@ class ROUTE
                         $urlNow = $url->now();
                         $this->requestHeaders = getallheaders();
                         $this->name = $info['name'];
+                        $this->url = $url->getURL() . "api/";
                         if (isset($info['version'])) {
                                 $this->version = $info['version'];
-                                $this->url = $url->getURL() . "v" . $this->version . "/";
-                        } else {
-                                $this->url = $url->getURL();
+                                $this->url .= "v" . $this->version . "/";
                         }
                         if (substr($urlNow, -1) !== "/") {
                                 $urlNow = $urlNow . "/";
@@ -146,7 +145,7 @@ class ROUTE
                 foreach ($parts as $key => $value) {
                         $parts[$key] = "/" . $parts[$key];
                 }
-                $recursiveRoute = function ($recursiveRoute, $previous = "", &$arrayParent, $arrayTarget, $callback) {
+                $recursiveRoute = function ($recursiveRoute, &$arrayParent, $arrayTarget, $callback, $previous = "") {
                         $previous = ($previous == "" ? (isset($arrayTarget[0]) ? $arrayTarget[0] : "") : $previous);
                         $position = (isset($arrayTarget[0]) ? $arrayTarget[0] : "");
                         if (!array_key_exists($position, $arrayParent)) {
@@ -156,10 +155,10 @@ class ROUTE
                         if (empty($arrayTarget)) {
                                 $arrayParent[$position]['callback'] = $callback;
                         } else {
-                                $recursiveRoute($recursiveRoute, $position, $arrayParent[$position], array_values($arrayTarget), $callback);
+                                $recursiveRoute($recursiveRoute, $arrayParent[$position], array_values($arrayTarget), $callback, $position);
                         }
                 };
-                $recursiveRoute($recursiveRoute, "", $this->routes, $parts, $callback);
+                $recursiveRoute($recursiveRoute, $this->routes, $parts, $callback, "");
         }
 
         /**
@@ -182,7 +181,7 @@ class ROUTE
                                 foreach ($parts as $key => $value) {
                                         $parts[$key] = "/" . $parts[$key];
                                 }
-                                $recursiveRoute = function ($recursiveRoute, $previous = "", &$arrayParent, $arrayTarget, $callback) {
+                                $recursiveRoute = function ($recursiveRoute, &$arrayParent, $arrayTarget, $callback, $previous = "") {
                                         $previous = ($previous == "" ? (isset($arrayTarget[0]) ? $arrayTarget[0] : "") : $previous);
                                         $position = (isset($arrayTarget[0]) ? $arrayTarget[0] : "");
                                         if (!array_key_exists($position, $arrayParent)) {
@@ -192,10 +191,10 @@ class ROUTE
                                         if (empty($arrayTarget)) {
                                                 $arrayParent[$position]['middleware'] = $callback;
                                         } else {
-                                                $recursiveRoute($recursiveRoute, $position, $arrayParent[$position], array_values($arrayTarget), $callback);
+                                                $recursiveRoute($recursiveRoute, $arrayParent[$position], array_values($arrayTarget), $callback, $position);
                                         }
                                 };
-                                $recursiveRoute($recursiveRoute, "", $this->routes, $parts, $callback);
+                                $recursiveRoute($recursiveRoute, $this->routes, $parts, $callback, "");
                         }
                 } else {
                         if (is_string($routesArray)) {

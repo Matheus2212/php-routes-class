@@ -10,6 +10,17 @@ This class needs the [Friendly URL](https://github.com/Matheus2212/php-friendly-
 
 ## How to use
 
+### Set up
+
+```php
+// URL = /version/1487
+$url = new URL("http://localhost"); // Friendly URL class instance
+$api = new ROUTE($url, ['name' => "SHAW", 'version' => '1.0']);
+$api->define("/route/{{id}}", function ($api, $request) {
+        $api->join($request); // you will see on the response an "id" position with "1487" as its value
+});
+```
+
 ### version()
 
 Displays the API current Version
